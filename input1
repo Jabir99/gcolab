@@ -1,0 +1,98 @@
+package gpu 1 neigh no newton off
+suffix  gpu 
+
+####################Initialization####################
+
+units              real
+dimension          3
+boundary           p p p
+atom_style         full
+
+####################Aotm Definition###################
+
+read_data          box.data
+restart            10000               restart.*
+#read_restart      restart.320000
+
+#############Define Intraction Potential##############
+
+pair_style         hybrid lj/cut/coul/long 12.0 lj/charmm/coul/long 10.0 12.0
+
+pair_coeff         1 1    lj/charmm/coul/long  0.070000   3.5500           # C
+pair_coeff         1 3    lj/cut/coul/long     0.000000   0.0000           # C-H
+pair_coeff         1 4    lj/cut/coul/long     0.155354   3.3580           # C-O
+pair_coeff         2 2    lj/charmm/coul/long  0.070000   3.5500           # F
+pair_coeff         2 3    lj/cut/coul/long     0.000000   0.0000           # F-H
+pair_coeff         2 4    lj/cut/coul/long     0.155354   3.3580           # F-O
+pair_coeff         3 3    lj/cut/coul/long     0.000000   0.0000           # H
+pair_coeff         4 4    lj/cut/coul/long     0.155354   3.1660           # O
+
+bond_style         harmonic
+bond_coeff         1      305.000    1.3750                 # C-C
+bond_coeff         2      305.000    1.3750                 # F-F
+bond_coeff         3      0.00000    1.0000                 # O-H
+
+angle_style        harmonic
+angle_coeff        1      40.00      120.00                 # C-C-C
+angle_coeff        2      40.00      120.00                 # F-F-F
+angle_coeff        3      0.000      109.74                 # H-O-H
+
+dihedral_style     charmm
+dihedral_coeff     1      9.656 2 180 1.0                   # C-C-C-C
+dihedral_coeff     2      9.656 2 180 1.0                   # F-F-F-F
+
+special_bonds      charmm
+
+pair_modify        mix    arithmetic
+kspace_style       pppm   1.0e-5
+pair_modify        tail   yes
+
+#min_style
+#minmize
+
+###########Setting and Output of Simulation###########
+
+group             cnt                  type 1 
+group             f                    type 2
+group             c                    type 1 2
+group             wt                   type 3 4
+group             ox                   type 4
+
+fix                shake wt  shake 1.0e-4 100 0 b 3 a 3
+#fix                nvt   wt  nvt temp 298.0 298.0 100.0 #iso 1.0 1.0 1000
+fix                nve   all   nve
+fix                removeMomentum all momentum 1 linear 1 1 1
+
+velocity           all create 298.0 123 mom no rot no
+
+fix                cnt   cnt rigid single
+fix                f     f   rigid single
+
+fix                force f   setforce   0.0 -1 0.0
+
+#delete_atoms       group c
+#fix                force f     aveforce   0.0 0.0 0.0
+#fix                 fix c move linear 0 0 0
+#delete_atoms       overlap 1 wt cnt mol yes
+
+
+timestep           1.0
+
+
+neighbor           2.0 bin
+neigh_modify       every 1 delay 0 check yes
+
+
+compute            msd ox msd com yes
+fix                msd ox ave/time 1 1 1000 c_msd[4] file water.msd
+
+thermo            100
+thermo_style      custom step etotal pe ke vol density temp press
+thermo_modify     flush yes
+dump              1 all xyz 100 dump.xyz
+dump_modify       1 element C F H O 
+dump              2 all dcd 1000 dump.dcd
+dump_modify       2 unwrap yes
+write_data        config.data
+run               2000000
+
