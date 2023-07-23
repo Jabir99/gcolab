@@ -1,3 +1,5 @@
+package gpu 1 neigh no newton off
+suffix  gpu 
 ####################Initialization####################
 
 units              real
