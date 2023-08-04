@@ -1,5 +1,5 @@
-#package gpu 1 neigh no newton off
-#suffix  gpu 
+package gpu 1 neigh no newton off
+suffix  gpu 
 
 ####################Initialization####################
 
